@@ -1,3 +1,5 @@
+import hashlib as _hashlib
+import hmac as _hmac
 import json
 import os
 from contextlib import asynccontextmanager
@@ -15,6 +17,7 @@ load_dotenv()
 BASE_URL = os.getenv("KINETIC_API_URL", "http://localhost:8000")
 _OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 _OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
+_CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY", "")
 
 _TRAINER_TOOLS = [
     {
@@ -90,28 +93,26 @@ _TRAINER_TOOLS = [
 
 @asynccontextmanager
 async def app_lifespan(server: FastMCP):
-    api_key = os.getenv("KINETIC_API_KEY", "")
-
-    if not api_key:
-        user_id = os.getenv("KINETIC_USER_ID", "")
-        dev_secret = os.getenv("MCP_DEV_SECRET", "")
-        if user_id and dev_secret:
-            async with httpx.AsyncClient() as tmp:
-                r = await tmp.post(
-                    f"{BASE_URL}/auth/dev-login",
-                    json={"user_id": user_id, "secret": dev_secret},
-                )
-                r.raise_for_status()
-                api_key = r.json()["raw_key"]
-
-    headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+    headers: dict[str, str] = {}
+    if _CLERK_SECRET_KEY:
+        token = _hmac.new(
+            _CLERK_SECRET_KEY.encode(), b"kinetic-mcp-service-v1", _hashlib.sha256
+        ).hexdigest()
+        headers["X-Service-Token"] = token
+    elif api_key := os.getenv("KINETIC_API_KEY", ""):
+        headers["Authorization"] = f"Bearer {api_key}"
     async with httpx.AsyncClient(
         base_url=BASE_URL, headers=headers, follow_redirects=True
     ) as client:
         yield {"client": client}
 
 
-mcp = FastMCP("Kinetic", lifespan=app_lifespan)
+mcp = FastMCP(
+    "Kinetic",
+    lifespan=app_lifespan,
+    host=os.getenv("HOST", "127.0.0.1"),
+    port=int(os.getenv("PORT", "8000")),
+)
 
 
 # ── Profile ───────────────────────────────────────────────────────────────────
@@ -314,4 +315,5 @@ async def generate_workout(goal: str, ctx: Context) -> str:
 
 
 if __name__ == "__main__":
-    mcp.run()
+    transport = os.getenv("MCP_TRANSPORT", "stdio")
+    mcp.run(transport=transport)

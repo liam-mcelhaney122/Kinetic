@@ -1,4 +1,6 @@
 import hashlib
+import hmac as _hmac
+import secrets
 import time
 from datetime import UTC, datetime
 from typing import Any
@@ -12,6 +14,9 @@ from app.database import get_database
 
 _jwks_cache: dict[str, Any] = {}
 _JWKS_TTL = 3600
+
+_SERVICE_HMAC_KEY = b"kinetic-mcp-service-v1"
+_service_user_id: str | None = None
 
 
 async def _get_jwks() -> list[dict]:
@@ -62,11 +67,45 @@ async def _verify_api_key(token: str) -> str:
     return doc["user_id"]
 
 
+def _expected_service_token(secret_key: str) -> str:
+    return _hmac.new(secret_key.encode(), _SERVICE_HMAC_KEY, hashlib.sha256).hexdigest()
+
+
+async def _get_clerk_owner_user_id(secret_key: str) -> str | None:
+    """Fetch and cache the first (owner) Clerk user ID using the secret key."""
+    global _service_user_id
+    if _service_user_id:
+        return _service_user_id
+    async with httpx.AsyncClient() as client:
+        r = await client.get(
+            "https://api.clerk.com/v1/users",
+            headers={"Authorization": f"Bearer {secret_key}"},
+            params={"limit": 1},
+            timeout=10,
+        )
+        if r.status_code == 200 and r.json():
+            _service_user_id = r.json()[0]["id"]
+    return _service_user_id
+
+
 def _looks_like_jwt(token: str) -> bool:
     return token.count(".") == 2
 
 
 async def get_current_user(request: Request) -> str:
+    # 1. Service token: MCP server authenticates via HMAC(CLERK_SECRET_KEY)
+    svc_token = request.headers.get("X-Service-Token", "")
+    if svc_token:
+        settings = get_settings()
+        if settings.clerk_secret_key and secrets.compare_digest(
+            svc_token, _expected_service_token(settings.clerk_secret_key)
+        ):
+            user_id = await _get_clerk_owner_user_id(settings.clerk_secret_key)
+            if user_id:
+                return user_id
+        raise HTTPException(status_code=401, detail="Invalid service token")
+
+    # 2. Existing path: Clerk JWT or API key
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing Authorization header")
