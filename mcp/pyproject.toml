@@ -1,0 +1,19 @@
+[project]
+name = "kinetic-mcp"
+version = "0.1.0"
+description = "MCP server exposing the Kinetic API as Claude tools"
+requires-python = ">=3.12"
+dependencies = [
+    "mcp[cli]>=1.0",
+    "httpx>=0.27",
+    "python-dotenv>=1.0",
+    "openai>=1.50,<2",
+]
+
+[tool.uv]
+package = false
+
+# NOTE: trainer_prompt.py is duplicated in backend/app/ and mcp/. Keep them in sync
+# manually until backend is restructured into a proper packaged layout
+# (e.g. backend/src/kinetic_backend/) that supports cross-package imports under
+# uv workspaces. See plan WS2 follow-up.

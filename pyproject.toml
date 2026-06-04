@@ -1,0 +1,29 @@
+[project]
+name = "kinetic"
+version = "0.1.0"
+description = "Kinetic — personal strength-training app (workspace root)"
+readme = "README.md"
+requires-python = ">=3.12"
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["backend", "mcp"]
+
+# Shared lint / type-check configuration applied to every workspace member.
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/app/scripts/*" = ["E402"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_ignores = true

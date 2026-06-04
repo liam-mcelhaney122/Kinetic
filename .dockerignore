@@ -1,0 +1,44 @@
+# Secrets — must never enter the build context
+.env
+.env.*
+!.env.example
+
+# Python build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# Node / frontend (frontend has its own deploy)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Git / editor / OS
+.git/
+.gitignore
+.github/
+.idea/
+.vscode/
+.DS_Store
+
+# Docs and design — not needed at runtime
+docs/
+*.md
+
+# Tests (built separately in CI)
+backend/tests/
+
+# Compose / infra files don't belong in the image
+docker-compose*.yml
+infra/
+
+# Claude / agent config
+.claude/
+prompt.md

@@ -1,0 +1,45 @@
+# Local development stack only.
+# Production uses the Dockerfile directly on Fly.io / Render / Railway with
+# MongoDB Atlas — there is no production compose file by design.
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      ENVIRONMENT: development
+      LOG_JSON: "false"
+    ports:
+      - "8000:8000"
+    # Bind-mount the source for hot reload. The container's /app/app comes from
+    # the image at build time; this overlay swaps it for the working copy.
+    volumes:
+      - ./backend/app:/app/app
+    depends_on:
+      mongo:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  mongo_data:
