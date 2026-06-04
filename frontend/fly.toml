@@ -7,8 +7,7 @@ app = 'kinetic-frontend'
 primary_region = 'iad'
 
 [build]
-  dockerfile = 'frontend/Dockerfile'
-  context = 'frontend'
+  dockerfile = 'Dockerfile'
 
   [build.args]
     VITE_API_URL = 'https://kinetic-api.fly.dev'
