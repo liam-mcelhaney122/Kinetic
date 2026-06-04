@@ -143,7 +143,7 @@ The backend deploys to **Fly.io** as a Docker container. MongoDB runs on **Atlas
 
 ```bash
 # First time
-fly launch --no-deploy --config infra/fly.toml
+fly launch --no-deploy --config fly.toml
 
 # Set secrets (run once, rotated via fly secrets set)
 fly secrets set \
@@ -154,7 +154,7 @@ fly secrets set \
   MCP_DEV_SECRET=""   # leave empty to disable dev auth in prod
 
 # Deploy
-fly deploy --config infra/fly.toml
+fly deploy --config fly.toml
 ```
 
 CI/CD runs on GitHub Actions (`.github/workflows/ci.yml`):

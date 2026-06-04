@@ -1,0 +1,42 @@
+# fly.toml app configuration file generated for kinetic-frontend on 2026-06-04T13:37:27-04:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'kinetic-frontend'
+primary_region = 'iad'
+
+[build]
+  dockerfile = 'frontend/Dockerfile'
+
+  [build.args]
+    VITE_API_URL = 'https://kinetic-api.fly.dev'
+    VITE_CLERK_PUBLISHABLE_KEY = 'pk_test_YnVyc3RpbmctZGlub3NhdXItMjEuY2xlcmsuYWNjb3VudHMuZGV2JA'
+
+[[services]]
+  protocol = 'tcp'
+  internal_port = 8080
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[services.ports]]
+    port = 80
+    handlers = ['http']
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ['tls', 'http']
+
+  [[services.http_checks]]
+    interval = '30s'
+    timeout = '3s'
+    grace_period = '10s'
+    method = 'GET'
+    path = '/'
+    protocol = 'http'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '256mb'
