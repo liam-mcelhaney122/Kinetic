@@ -56,9 +56,9 @@ jobs:
       - name: Prettier check
         run: npm run format:check
 
-  # ── Docker build (validates Dockerfile, no push on PRs) ────────────────────
-  docker-build:
-    name: Docker build
+  # ── Backend Docker build ────────────────────────────────────────────────────
+  docker-build-backend:
+    name: Docker build (backend)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -75,10 +75,32 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  # ── Frontend Docker build ───────────────────────────────────────────────────
+  docker-build-frontend:
+    name: Docker build (frontend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          file: frontend/Dockerfile
+          push: false
+          build-args: |
+            VITE_API_URL=https://kinetic-api.fly.dev
+            VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   # ── Deploy to Fly.io (main branch only) ────────────────────────────────────
   deploy:
     name: Deploy
-    needs: [backend-lint, frontend-lint, docker-build]
+    needs: [backend-lint, frontend-lint, docker-build-backend, docker-build-frontend]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: production
@@ -88,7 +110,12 @@ jobs:
       - name: Set up flyctl
         uses: superfly/flyctl-actions/setup-flyctl@master
 
-      - name: Deploy to Fly.io
+      - name: Deploy backend to Fly.io
         run: flyctl deploy --config infra/fly.toml --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Deploy frontend to Fly.io
+        run: flyctl deploy --config infra/fly-frontend.toml --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

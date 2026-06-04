@@ -14,9 +14,9 @@ kill_timeout = "5s"
   ENVIRONMENT = "production"
   LOG_JSON    = "true"
   MONGO_DB    = "kinetic"
-  # Non-secret config only. Secrets are set via:
-  #   fly secrets set MONGO_URI=... OPENAI_API_KEY=... CLERK_JWKS_URL=... CLERK_AUDIENCE=...
-  # Full list of required secrets is documented in .env.example.
+  # Set secrets via: fly secrets set MONGO_URI=... OPENAI_API_KEY=... CLERK_JWKS_URL=...
+  # CLERK_AUDIENCE=... CORS_ORIGINS=https://kinetic-frontend.fly.dev
+  # Full list documented in .env.example.
 
 [[services]]
   internal_port = 8000

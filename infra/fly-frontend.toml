@@ -1,0 +1,45 @@
+# Fly.io configuration for the Kinetic frontend (static nginx SPA).
+# Deploy with: fly deploy --config infra/fly-frontend.toml
+# First-time setup: fly launch --no-deploy --config infra/fly-frontend.toml
+#
+# VITE_* vars are build args (not secrets) — they end up in the JS bundle
+# served to browsers, so there is no security benefit to hiding them.
+# Update VITE_CLERK_PUBLISHABLE_KEY below with your production key.
+
+app = "kinetic-frontend"
+primary_region = "iad"
+
+[build]
+  dockerfile = "frontend/Dockerfile"
+
+  [build.args]
+    VITE_API_URL              = "https://kinetic-api.fly.dev"
+    VITE_CLERK_PUBLISHABLE_KEY = "pk_live_REPLACE_ME"
+
+[[services]]
+  internal_port = 8080
+  protocol      = "tcp"
+  auto_stop_machines  = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[services.ports]]
+    port        = 80
+    handlers    = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port     = 443
+    handlers = ["tls", "http"]
+
+  [[services.http_checks]]
+    interval     = "30s"
+    timeout      = "3s"
+    grace_period = "10s"
+    method       = "GET"
+    path         = "/"
+    protocol     = "http"
+
+[[vm]]
+  size   = "shared-cpu-1x"
+  memory = "256mb"
