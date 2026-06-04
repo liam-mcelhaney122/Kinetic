@@ -2,13 +2,13 @@
 # Multi-stage build for the Kinetic frontend.
 # Build context: frontend/ directory
 #   docker build -f frontend/Dockerfile -t kinetic-frontend frontend/
-# Or via Fly: fly deploy --config fly-frontend.toml
+# Or via Fly: fly deploy --config frontend/fly.toml
 
 # ---------- Builder ----------
 FROM node:20-slim AS builder
 WORKDIR /app
 
-COPY package*.json ./
+COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
