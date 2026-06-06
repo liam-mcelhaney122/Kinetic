@@ -7,9 +7,9 @@ export interface UserProfile {
 }
 
 export function getProfile(signal?: AbortSignal): Promise<UserProfile> {
-  return apiGet<UserProfile>('/profile', signal);
+  return apiGet<UserProfile>('/profile/', signal);
 }
 
 export function updateProfile(data: Partial<UserProfile>): Promise<UserProfile> {
-  return apiPatch<UserProfile>('/profile', data);
+  return apiPatch<UserProfile>('/profile/', data);
 }

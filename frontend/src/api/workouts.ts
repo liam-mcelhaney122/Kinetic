@@ -2,7 +2,7 @@ import { apiGet, apiPost, apiPatch, apiDelete } from './client';
 import type { Workout, WorkoutExercise } from '../types';
 
 export function listWorkouts(signal?: AbortSignal): Promise<Workout[]> {
-  return apiGet<Workout[]>('/workouts', signal);
+  return apiGet<Workout[]>('/workouts/', signal);
 }
 
 export function getWorkout(id: string, signal?: AbortSignal): Promise<Workout> {

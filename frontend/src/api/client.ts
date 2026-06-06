@@ -1,5 +1,30 @@
 // In production, vite.config.ts enforces this is set at build time.
-const BASE_URL: string = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const RAW_BASE_URL: string = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+
+function isLocalHostname(hostname: string): boolean {
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+}
+
+function resolveBaseUrl(rawBaseUrl: string): string {
+  const trimmed = rawBaseUrl.trim();
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return trimmed.replace(/\/+$/, '');
+  }
+
+  const shouldUpgradeToHttps =
+    typeof window !== 'undefined' &&
+    window.location.protocol === 'https:' &&
+    parsed.protocol === 'http:' &&
+    !isLocalHostname(parsed.hostname);
+
+  if (shouldUpgradeToHttps) parsed.protocol = 'https:';
+  return parsed.toString().replace(/\/+$/, '');
+}
+
+const BASE_URL: string = resolveBaseUrl(RAW_BASE_URL);
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
