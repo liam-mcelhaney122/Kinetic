@@ -12,20 +12,70 @@ interface ActiveWorkoutScreenProps {
   onFinished: (workoutId: string) => void;
 }
 
-function toLocal(exercises: WorkoutExercise[]): LocalExercise[] {
+// done-state persistence: keyed by workoutId so it survives navigation within the session
+const doneKey = (id: string) => `kinetic:done:${id}`;
+
+function saveDoneState(workoutId: string, exercises: LocalExercise[]) {
+  const state: Record<string, boolean[]> = {};
+  exercises.forEach((ex) => {
+    state[ex.exercise_id] = ex.sets.map((s) => s.done);
+  });
+  localStorage.setItem(doneKey(workoutId), JSON.stringify(state));
+}
+
+function loadDoneState(workoutId: string): Record<string, boolean[]> {
+  try {
+    const raw = localStorage.getItem(doneKey(workoutId));
+    return raw ? (JSON.parse(raw) as Record<string, boolean[]>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function clearDoneState(workoutId: string) {
+  localStorage.removeItem(doneKey(workoutId));
+}
+
+function toLocal(exercises: WorkoutExercise[], doneState: Record<string, boolean[]> = {}): LocalExercise[] {
   return exercises.map((ex) => ({
     exercise_id: ex.exercise_id,
     name: ex.name,
     reasoning: ex.reasoning,
     coach_note: ex.coach_note,
     superset_id: ex.superset_id,
-    sets: ex.sets.map((s) => ({
+    sets: ex.sets.map((s, i) => ({
       weight: s.weight > 0 ? String(s.weight) : '',
       reps: s.reps > 0 ? String(s.reps) : '',
-      done: false,
+      done: doneState[ex.exercise_id]?.[i] ?? false,
       set_type: s.set_type ?? 'normal',
     })),
   }));
+}
+
+// Merges an adjusted workout response with current local state, preserving
+// user-entered weights, reps, and done status for exercises that still exist.
+function mergeWithLocal(current: LocalExercise[], updated: WorkoutExercise[]): LocalExercise[] {
+  const byId = new Map(current.map((ex) => [ex.exercise_id, ex]));
+  return updated.map((ex) => {
+    const existing = byId.get(ex.exercise_id);
+    return {
+      exercise_id: ex.exercise_id,
+      name: ex.name,
+      reasoning: ex.reasoning,
+      coach_note: ex.coach_note,
+      superset_id: ex.superset_id,
+      sets: ex.sets.map((s, i) => {
+        const local = existing?.sets[i];
+        if (local) return { ...local, set_type: s.set_type ?? 'normal' };
+        return {
+          weight: s.weight > 0 ? String(s.weight) : '',
+          reps: s.reps > 0 ? String(s.reps) : '',
+          done: false,
+          set_type: s.set_type ?? 'normal',
+        };
+      }),
+    };
+  });
 }
 
 function toApi(exercises: LocalExercise[]): WorkoutExercise[] {
@@ -93,17 +143,17 @@ export function ActiveWorkoutScreen({ workoutId, onBack, onFinished }: ActiveWor
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialized = useRef(false);
 
-  // Initialize local state once data loads
+  // Initialize local state once data loads, restoring any persisted done state
   useEffect(() => {
     if (!data || initialized.current) return;
     initialized.current = true;
     targets.current = data.exercises;
-    setExercises(toLocal(data.exercises));
+    setExercises(toLocal(data.exercises, loadDoneState(workoutId)));
 
     const raw = data.created_at.endsWith('Z') ? data.created_at : data.created_at + 'Z';
     const start = new Date(raw).getTime();
     setElapsedSeconds(Math.max(0, Math.floor((Date.now() - start) / 1000)));
-  }, [data]);
+  }, [data, workoutId]);
 
   // Timer
   useEffect(() => {
@@ -126,6 +176,7 @@ export function ActiveWorkoutScreen({ workoutId, onBack, onFinished }: ActiveWor
     const next = exercises.map((ex, i) => (i === index ? { ...ex, sets } : ex));
     setExercises(next);
     scheduleAutoSave(next);
+    saveDoneState(workoutId, next);
   }
 
   async function handleFinish() {
@@ -134,6 +185,7 @@ export function ActiveWorkoutScreen({ workoutId, onBack, onFinished }: ActiveWor
     if (saveTimer.current) clearTimeout(saveTimer.current);
     try {
       await completeWorkoutApi(workoutId, toApi(exercises));
+      clearDoneState(workoutId);
       onFinished(workoutId);
     } catch {
       setFinishing(false);
@@ -256,7 +308,9 @@ export function ActiveWorkoutScreen({ workoutId, onBack, onFinished }: ActiveWor
         workoutId={workoutId}
         onApply={(updatedExercises) => {
           if (saveTimer.current) clearTimeout(saveTimer.current);
-          setExercises(toLocal(updatedExercises));
+          const merged = mergeWithLocal(exercises, updatedExercises);
+          setExercises(merged);
+          saveDoneState(workoutId, merged);
           setAdjustOpen(false);
         }}
         onClose={() => setAdjustOpen(false)}
