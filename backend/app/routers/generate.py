@@ -221,7 +221,7 @@ async def generate_workout(body: GenerateRequest, current_user: str = Depends(ge
                     result = docs
 
                 elif name == "list_workouts":
-                    docs = await db["workouts"].find({"user_id": current_user}).sort("date", -1).to_list(None)
+                    docs = await db["workouts"].find({"user_id": current_user}).sort("date", -1).to_list(30)
                     for d in docs:
                         d["_id"] = str(d["_id"])
                     result = docs
