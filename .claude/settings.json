@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "kinetic": {
+      "command": "/Users/liammcelhaney/Desktop/Kinetic/mcp/.venv/bin/python",
+      "args": ["server.py"],
+      "cwd": "/Users/liammcelhaney/Desktop/Kinetic/mcp"
+    }
+  }
+}
