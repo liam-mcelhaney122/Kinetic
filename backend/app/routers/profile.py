@@ -6,7 +6,7 @@ from app.models.profile import ProfileResponse, ProfileUpdate
 
 router = APIRouter(prefix="/profile", tags=["Profile"])
 
-_DEFAULT = {"unit": "kg", "custom_instructions": ""}
+_DEFAULT = {"unit": "kg", "custom_instructions": "", "openai_model": ""}
 
 
 @router.get("/", response_model=ProfileResponse, summary="Get user profile")

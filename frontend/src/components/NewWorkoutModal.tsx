@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 import { generateWorkout } from '../api/workouts';
 import type { Workout } from '../types';
 
@@ -40,7 +40,7 @@ export function NewWorkoutModal({ open, onClose, onCreated }: NewWorkoutModalPro
     <>
       {/* Backdrop */}
       <div
-        onClick={handleClose}
+        onClick={generating ? undefined : handleClose}
         className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 ${
           open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
@@ -63,8 +63,9 @@ export function NewWorkoutModal({ open, onClose, onCreated }: NewWorkoutModalPro
           <h2 className="font-headline text-2xl font-bold text-on-surface">New Workout</h2>
           <button
             type="button"
-            onClick={handleClose}
-            className="rounded-full p-2 text-secondary active:bg-surface-container"
+            onClick={generating ? undefined : handleClose}
+            disabled={generating}
+            className="rounded-full p-2 text-secondary active:bg-surface-container disabled:opacity-30"
           >
             <X className="h-5 w-5" />
           </button>
@@ -102,15 +103,25 @@ export function NewWorkoutModal({ open, onClose, onCreated }: NewWorkoutModalPro
             type="button"
             onClick={handleGenerate}
             disabled={generating || goal.trim().length === 0}
-            className={`flex-1 rounded-full bg-gradient-to-r from-primary to-primary-container py-4 font-headline text-sm font-bold uppercase tracking-widest text-on-primary transition-opacity ${
+            className={`flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-primary to-primary-container py-4 font-headline text-sm font-bold uppercase tracking-widest text-on-primary transition-opacity ${
               generating || goal.trim().length === 0
                 ? 'opacity-40 cursor-not-allowed'
                 : 'active:scale-95'
-            } ${generating ? 'animate-pulse' : ''}`}
+            }`}
           >
-            {generating ? 'Generating…' : 'Generate'}
+            {generating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Generating…
+              </>
+            ) : 'Generate'}
           </button>
         </div>
+        {generating && (
+          <p className="px-6 pt-3 text-center font-label text-xs text-secondary/60">
+            Analyzing your history and building your plan…
+          </p>
+        )}
       </div>
     </>
   );

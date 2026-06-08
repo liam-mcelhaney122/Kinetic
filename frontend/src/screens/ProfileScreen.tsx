@@ -5,6 +5,7 @@ import { TopAppBar } from '../components/TopAppBar';
 import { BottomNav } from '../components/BottomNav';
 import { useProfile } from '../hooks/useProfile';
 import { updateProfile } from '../api/profile';
+import { getOpenAIModels } from '../api/openaiModels';
 import { apiDelete, apiGet, apiPost } from '../api/client';
 import { useSetUnit } from '../context/UnitContext';
 import type { WeightUnit } from '../utils/units';
@@ -36,6 +37,8 @@ export function ProfileScreen({ onNavigateStart, onNavigateMetrics }: ProfileScr
   const setContextUnit = useSetUnit();
   const [unit, setUnit] = useState<WeightUnit>('lbs');
   const [instructions, setInstructions] = useState('');
+  const [openaiModel, setOpenaiModel] = useState('');
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -50,18 +53,20 @@ export function ProfileScreen({ onNavigateStart, onNavigateMetrics }: ProfileScr
     if (!loading) {
       setUnit(data.unit);
       setInstructions(data.custom_instructions);
+      setOpenaiModel(data.openai_model ?? '');
     }
   }, [loading, data]);
 
   useEffect(() => {
     apiGet<ApiKeyResponse[]>('/api-keys/').then(setApiKeys).catch(() => {});
+    getOpenAIModels().then(setAvailableModels).catch(() => {});
   }, []);
 
   async function handleSave() {
     setSaving(true);
     setSaved(false);
     try {
-      await updateProfile({ unit, custom_instructions: instructions });
+      await updateProfile({ unit, custom_instructions: instructions, openai_model: openaiModel });
       setContextUnit(unit);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -132,6 +137,23 @@ export function ProfileScreen({ onNavigateStart, onNavigateMetrics }: ProfileScr
               </button>
             ))}
           </div>
+        </section>
+
+        {/* AI model selector */}
+        <section className="mb-8">
+          <p className="font-label mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">
+            AI Model
+          </p>
+          <select
+            value={openaiModel}
+            onChange={(e) => setOpenaiModel(e.target.value)}
+            className="w-full rounded-2xl bg-surface-container px-4 py-3 font-body text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none"
+          >
+            <option value="">Server default (gpt-4o)</option>
+            {availableModels.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
         </section>
 
         {/* Custom instructions */}

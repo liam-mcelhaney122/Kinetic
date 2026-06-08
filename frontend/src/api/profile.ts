@@ -4,6 +4,7 @@ import type { WeightUnit } from '../utils/units';
 export interface UserProfile {
   unit: WeightUnit;
   custom_instructions: string;
+  openai_model: string;
 }
 
 export function getProfile(signal?: AbortSignal): Promise<UserProfile> {

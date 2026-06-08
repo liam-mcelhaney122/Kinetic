@@ -188,6 +188,8 @@ async def generate_workout(body: GenerateRequest, current_user: str = Depends(ge
         profile["unit"] = profile_doc.get("unit", "kg")
         profile["custom_instructions"] = profile_doc.get("custom_instructions", "")
 
+    model = (profile_doc or {}).get("openai_model") or settings.openai_model
+
     today = str(_date.today())
     system_prompt = build_system_prompt(profile, today)
 
@@ -201,7 +203,7 @@ async def generate_workout(body: GenerateRequest, current_user: str = Depends(ge
 
     for _ in range(12):
         response = await client.chat.completions.create(
-            model=settings.openai_model,
+            model=model,
             messages=messages,
             tools=_TOOLS,
 
@@ -312,6 +314,8 @@ async def adjust_workout(workout_id: str, body: AdjustRequest, current_user: str
         profile["unit"] = profile_doc.get("unit", "kg")
         profile["custom_instructions"] = profile_doc.get("custom_instructions", "")
 
+    model = (profile_doc or {}).get("openai_model") or settings.openai_model
+
     exercise_docs = await db["exercises"].find({"user_id": current_user}).sort("name", 1).to_list(None)
     for d in exercise_docs:
         d["_id"] = str(d["_id"])
@@ -330,7 +334,7 @@ async def adjust_workout(workout_id: str, body: AdjustRequest, current_user: str
 
     for _ in range(6):
         response = await client.chat.completions.create(
-            model=settings.openai_model,
+            model=model,
             messages=messages,
             tools=_ADJUST_TOOLS,
 

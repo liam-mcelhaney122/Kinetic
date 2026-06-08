@@ -25,6 +25,7 @@ from app.routers.api_keys import router as api_keys_router
 from app.routers.auth import router as auth_router
 from app.routers.exercises import router as exercises_router
 from app.routers.generate import router as generate_router
+from app.routers.openai_models import router as openai_models_router
 from app.routers.profile import router as profile_router
 from app.routers.workouts import router as workouts_router
 
@@ -112,6 +113,7 @@ app.include_router(admin_router)
 app.include_router(profile_router)
 app.include_router(api_keys_router)
 app.include_router(generate_router)
+app.include_router(openai_models_router)
 app.include_router(auth_router)
 
 

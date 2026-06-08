@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { getProfile } from '../api/profile';
 import type { UserProfile } from '../api/profile';
 
-const DEFAULT_PROFILE: UserProfile = { unit: 'lbs', custom_instructions: '' };
+const DEFAULT_PROFILE: UserProfile = { unit: 'lbs', custom_instructions: '', openai_model: '' };
 
 export function useProfile(): { data: UserProfile; loading: boolean; error: string | null } {
   const [data, setData] = useState<UserProfile>(DEFAULT_PROFILE);
